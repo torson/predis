@@ -289,8 +289,8 @@ class SentinelReplication implements ReplicationInterface
             // Set SSL context options if using TLS
             if (isset($parameters['scheme']) && $parameters['scheme'] === 'tls') {
                 $sslOptions = [
-                    'verify_peer' => true,
-                    'verify_peer_name' => true,
+                    'verify_peer' => false,
+                    'verify_peer_name' => false,
                 ];
 
                 // Allow custom SSL options to be passed through parameters
