@@ -264,14 +264,17 @@ class SentinelReplication implements ReplicationInterface
         }
 
         if (is_array($parameters)) {
-            // NOTE: sentinels do not accept AUTH and SELECT commands so we must
+            // Handle TLS scheme for sentinels
+            if (isset($parameters['scheme']) && $parameters['scheme'] === 'tls') {
+                $parameters['scheme'] = 'tls';
+            } elseif (isset($parameters['scheme']) && $parameters['scheme'] === 'rediss') {
+                $parameters['scheme'] = 'tls';
+            }
+
+            // NOTE: sentinels do not accept SELECT commands so we must
             // explicitly set them to NULL to avoid problems when using default
-            // parameters set via client options. Actually AUTH is supported for
-            // sentinels starting with Redis 5 but we have to differentiate from
-            // sentinels passwords and nodes passwords, this will be implemented
-            // in a later release.
+            // parameters set via client options.
             $parameters['database'] = null;
-            $parameters['username'] = null;
 
             // don't leak password from between configurations
             // https://github.com/predis/predis/pull/807/#discussion_r985764770
@@ -281,6 +284,21 @@ class SentinelReplication implements ReplicationInterface
 
             if (!isset($parameters['timeout'])) {
                 $parameters['timeout'] = $this->sentinelTimeout;
+            }
+
+            // Set SSL context options if using TLS
+            if (isset($parameters['scheme']) && $parameters['scheme'] === 'tls') {
+                $sslOptions = [
+                    'verify_peer' => true,
+                    'verify_peer_name' => true,
+                ];
+
+                // Allow custom SSL options to be passed through parameters
+                if (isset($parameters['ssl'])) {
+                    $sslOptions = array_merge($sslOptions, $parameters['ssl']);
+                }
+
+                $parameters['ssl'] = $sslOptions;
             }
         }
 
